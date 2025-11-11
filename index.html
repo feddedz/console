@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Pages Terminal Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the terminal look */
+        body {
+            background-color: #111827; /* Dark gray background */
+            font-family: 'Fira Code', monospace;
+        }
+        #terminal-output, #terminal-input {
+            font-size: 14px;
+            color: #E5E7EB; /* Light gray text */
+        }
+        .terminal-container {
+            max-width: 800px;
+            height: 600px;
+            background-color: #1f2937; /* Even darker blue-gray for terminal body */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #374151;
+        }
+        .terminal-header {
+            background-color: #374151;
+            padding: 8px;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .red { background-color: #ef4444; }
+        .yellow { background-color: #f59e0b; }
+        .green { background-color: #10b981; }
+        
+        .prompt-text {
+            color: #4ade80; /* Green color for the prompt */
+        }
+        .path-text {
+            color: #93c5fd; /* Blue color for the path */
+        }
+        /* Custom scrollbar */
+        #terminal-output::-webkit-scrollbar {
+            width: 8px;
+        }
+        #terminal-output::-webkit-scrollbar-thumb {
+            background-color: #4b5563;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="terminal-container w-full">
+        <!-- Terminal Header -->
+        <div class="terminal-header">
+            <div class="dot red"></div>
+            <div class="dot yellow"></div>
+            <div class="dot green"></div>
+            <span class="text-xs text-gray-300 ml-2">user@github-page-vm:~ (Simulated)</span>
+        </div>
+
+        <!-- Terminal Output Area -->
+        <div id="terminal-output" class="p-4 h-[calc(100%-48px)] overflow-y-auto whitespace-pre-wrap">
+            <div class="text-xs text-gray-400 mb-2">
+                Welcome to the GitHub Pages Terminal Simulator.<br>
+                This is a purely front-end shell running in your browser, **NOT** connected to a live Colab VM.<br>
+                Type '<span class="text-yellow-400">help</span>' for a list of available local commands.
+                <hr class="border-gray-600 my-2">
+            </div>
+        </div>
+
+        <!-- Terminal Input Area -->
+        <div class="flex p-4 border-t border-gray-700">
+            <label for="terminal-input" class="flex-shrink-0">
+                <span id="prompt-display" class="prompt-text">user@github-page-vm</span>:<span class="path-text">~</span><span class="prompt-text">$</span>&nbsp;
+            </label>
+            <input type="text" id="terminal-input" class="flex-grow bg-transparent border-none focus:outline-none" autofocus autocomplete="off">
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        const outputElement = document.getElementById('terminal-output');
+        const inputElement = document.getElementById('terminal-input');
+        const promptDisplay = document.getElementById('prompt-display');
+        let currentPath = '~';
+
+        // Command definitions
+        const commands = {
+            'help': {
+                description: 'Displays a list of available commands.',
+                execute: () => {
+                    let helpText = "Available Commands (Front-end Simulation):\n";
+                    for (const cmd in commands) {
+                        helpText += `- ${cmd.padEnd(10, ' ')}: ${commands[cmd].description}\n`;
+                    }
+                    helpText += "\nPrefix any command with '!' to see a simulated remote command.\nExample: !ls -l /content";
+                    return helpText;
+                }
+            },
+            'clear': {
+                description: 'Clears the terminal screen.',
+                execute: () => {
+                    outputElement.innerHTML = '';
+                    return '';
+                }
+            },
+            'echo': {
+                description: 'Echos text back to the terminal.',
+                execute: (args) => args.join(' ')
+            },
+            'date': {
+                description: 'Displays the current client-side date and time.',
+                execute: () => new Date().toString()
+            },
+            'whoami': {
+                description: 'Displays the current simulated user.',
+                execute: () => 'user'
+            },
+            'cd': {
+                description: 'Changes the simulated current directory (e.g., cd /src).',
+                execute: (args) => {
+                    const newPath = args[0];
+                    if (!newPath) return '';
+                    if (newPath === '..') {
+                        currentPath = currentPath.split('/').slice(0, -1).join('/');
+                        if (currentPath === '') currentPath = '~';
+                    } else if (newPath.startsWith('/')) {
+                        currentPath = newPath;
+                    } else {
+                        currentPath = (currentPath === '~' ? '' : currentPath) + '/' + newPath;
+                    }
+                    updatePrompt();
+                    return '';
+                }
+            }
+        };
+        
+        // Simulates remote execution (for educational/visual purposes only)
+        function simulateRemoteCommand(command, args) {
+            let output = `[COLAB SHELL SIMULATION]\n`;
+            
+            if (command === 'ls') {
+                output += `ls: listing contents of ${args.join(' ')}\n`;
+                output += `total 16K\n`;
+                output += `drwxr-xr-x  2 root root 4.0K Nov 10 17:00 data\n`;
+                output += `-rw-r--r--  1 root root  123 Nov 10 17:00 notebook.ipynb\n`;
+                output += `drwxr-xr-x 33 root root 4.0K Nov 10 17:00 usr\n`;
+            } else if (command === 'pip') {
+                output += `pip: Checking library status...\n`;
+                output += `numpy==1.24.4\npandas==2.1.4\ntorch==2.1.2\n`;
+            } else if (command === 'python') {
+                 output += `Python 3.10.12 (main, Nov 20 2023, 15:14:05)\n`;
+                 output += `>>> print('Hello from the remote kernel!')\nHello from the remote kernel!\n`;
+            } else {
+                output += `Error: Command '!${command}' not recognized by the remote simulation.\n`;
+            }
+
+            output += `\n[END SIMULATION] The actual output of your Colab VM may vary.`;
+            return output;
+        }
+
+        // Helper function to update the prompt appearance
+        function updatePrompt() {
+            promptDisplay.innerHTML = `<span class="prompt-text">user@github-page-vm</span>:<span class="path-text">${currentPath}</span><span class="prompt-text">$</span>&nbsp;`;
+        }
+
+        // Core execution logic
+        function executeCommand(commandLine) {
+            const parts = commandLine.trim().split(/\s+/);
+            const command = parts[0];
+            const args = parts.slice(1);
+
+            let outputText = '';
+
+            if (command.startsWith('!')) {
+                // Handle simulated remote commands (start with !)
+                const remoteCommand = command.substring(1);
+                outputText = simulateRemoteCommand(remoteCommand, args);
+            } else if (commands[command]) {
+                // Handle local commands
+                outputText = commands[command].execute(args);
+            } else if (command === '') {
+                // Do nothing for empty command
+            } else {
+                // Command not found
+                outputText = `bash: ${command}: command not found (This is a front-end simulation)`;
+            }
+
+            // Append input line and output to the terminal display
+            const inputLine = `<span class="prompt-text">user@github-page-vm</span>:<span class="path-text">${currentPath}</span><span class="prompt-text">$</span> ${commandLine}`;
+            
+            outputElement.innerHTML += inputLine + '\n';
+            if (outputText) {
+                outputElement.innerHTML += outputText + '\n';
+            }
+            
+            // Scroll to the bottom
+            outputElement.scrollTop = outputElement.scrollHeight;
+        }
+
+        // Event listener for the input field (on Enter key)
+        inputElement.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const commandLine = inputElement.value.trim();
+                inputElement.value = '';
+                executeCommand(commandLine);
+            }
+        });
+
+        // Initialize the prompt
+        updatePrompt();
+        
+    </script>
+</body>
+</html>
